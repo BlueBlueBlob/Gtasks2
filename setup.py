@@ -1,20 +1,18 @@
-import gtasks
+import setuptools
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-
-setup(
-    name = 'gtasks',
-    version = gtasks.__version__,
-    description = 'A better Google Tasks Python module',
-    author = 'Benjamin White',
-    author_email = 'ben.white@berkeley.edu',
-    url = 'https://github.com/benjaminwhite/Gtasks',
+setuptools.setup(
+    name = 'gtasks2',
+    version = "0.0.1",
+    description = 'A fork from the greatest gtasks ',
+    author = 'BlueBlueBlob',
+    author_email = 'adrien.lesot@gmail.com',
+    url = 'https://github.com/BlueBlueBlob/Gtasks2',
     license = 'MIT',
-    packages = ['gtasks'],
-    install_requires = ['keyring', 'requests_oauthlib'],
+    install_requires = [
+        "keyring",
+        "requests_oauthlib"
+    ],
+    packages= setuptools.find_packages(),
     package_data = {'':['*.json']},
     keywords = ['google', 'tasks', 'task', 'gtasks', 'gtask']
 )
