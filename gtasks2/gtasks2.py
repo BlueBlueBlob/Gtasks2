@@ -9,10 +9,10 @@ import collections
 import keyring
 from requests_oauthlib import OAuth2Session
 
-import gtasks.timeconversion as tc
-from gtasks.misc import compatible_input
-from gtasks.task import Task
-from gtasks.tasklist import TaskList
+import gtasks2.timeconversion as tc
+from gtasks2.misc import compatible_input
+from gtasks2.task import Task
+from gtasks2.tasklist import TaskList
 
 class Gtasks(object):
     SCOPE = ['https://www.googleapis.com/auth/tasks',
