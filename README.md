@@ -6,3 +6,4 @@
 
 Just a fork from https://github.com/benjaminwhite/Gtasks
 With a new feature : can handle authorization callback
+callback send { 'authorization_url' : str } and received { 'auth_code' : str }
