@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name = 'gtasks2',
-    version = "0.0.1",
+    version = "0.1.0",
     description = 'A fork from the greatest gtasks ',
     author = 'BlueBlueBlob',
     author_email = 'adrien.lesot@gmail.com',
