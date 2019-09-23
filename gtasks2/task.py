@@ -3,10 +3,10 @@ from __future__ import absolute_import
 import re
 from contextlib import contextmanager
 
-import gtasks.timeconversion as tc
-from gtasks.gtaskobject import GtaskObject
-from gtasks.misc import raise_for_type
-from gtasks.tasklist import TaskList
+import gtasks2.timeconversion as tc
+from gtasks2.gtaskobject import GtaskObject
+from gtasks2.misc import raise_for_type
+from gtasks2.tasklist import TaskList
 
 class Task(GtaskObject):
     LIST_REGEX = re.compile('lists/(\w+)/tasks')

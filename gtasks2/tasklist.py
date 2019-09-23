@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from contextlib import contextmanager
 
-from gtasks.gtaskobject import GtaskObject
+from gtasks2.gtaskobject import GtaskObject
 
 class TaskList(GtaskObject):
     CLEAR_URL = 'https://www.googleapis.com/tasks/v1/lists/{}/clear'
