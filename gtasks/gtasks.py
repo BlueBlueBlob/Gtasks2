@@ -4,6 +4,7 @@ import json
 import os
 import webbrowser
 from contextlib import contextmanager
+import collections
 
 import keyring
 from requests_oauthlib import OAuth2Session
@@ -22,7 +23,7 @@ class Gtasks(object):
     TASKS_URL = 'https://www.googleapis.com/tasks/v1/lists/{}/tasks/'
 
     def __init__(self, identifier='default', auto_push=True, auto_pull=False,
-            open_browser=True, force_login=False, credentials_location=None):
+            open_browser=True, force_login=False, credentials_location=None, auth_callback=None):
         self.identifier = identifier
         self.auto_push = auto_push
         self.auto_pull = auto_pull
@@ -30,11 +31,14 @@ class Gtasks(object):
         self.force_login = force_login
         self.credentials_location = (credentials_location or
                 os.path.join(os.path.dirname(__file__), 'credentials.json'))
+        self._res = {}
+        self.auth_callback = auth_callback
         self._list_index = {}
         self._task_index = {}
         self._updates = set()
 
         self.load_credentials()
+        
         self.authenticate()
 
     def load_credentials(self):
@@ -48,6 +52,12 @@ class Gtasks(object):
             raise IOError('No valid Credentials file found.')
 
     def authenticate(self):
+        self._auth_step1()
+        if self.auth_callback is not None:
+            self._callback(self._res)
+        else:
+            self._auth_step2()
+    def _auth_step1(self):
         extra = {'client_id': self.client_id, 'client_secret': self.client_secret}
         self.google = OAuth2Session(self.client_id, scope=Gtasks.SCOPE,
                 redirect_uri=self.redirect_uri, auto_refresh_kwargs=extra,
@@ -59,17 +69,24 @@ class Gtasks(object):
         else:
             authorization_url, __ = self.google.authorization_url(Gtasks.AUTH_URL,
                     access_type='offline', approval_prompt='force')
+            self._res['authorization_url'] = authorization_url
 
-            if self.open_browser:
-                webbrowser.open_new_tab(authorization_url)
-                prompt = ('The following URL has been opened in your web browser:'
-                        '\n\n{}\n\nPlease paste the response code below:\n')
+    def _auth_step2(self):
+        if 'authorization_url' in self._res:
+            if self.auth_callback is None:
+                authorization_url = self._res['authorization_url']
+                if self.open_browser:
+                    webbrowser.open_new_tab(authorization_url)
+                    prompt = ('The following URL has been opened in your web browser:'
+                            '\n\n{}\n\nPlease paste the response code below:\n')
+                else:
+                    prompt = ('Please copy the following URL into your web browser:'
+                            '\n\n{}\n\nPlease paste the response code below:\n')
+                redirect_response = compatible_input(prompt.format(authorization_url))
+                print('Thank you!')
             else:
-                prompt = ('Please copy the following URL into your web browser:'
-                        '\n\n{}\n\nPlease paste the response code below:\n')
-            redirect_response = compatible_input(prompt.format(authorization_url))
-            print('Thank you!')
-
+                redirect_response = self._res['auth_code']
+    
             tokens = self.google.fetch_token(Gtasks.TOKEN_URL,
                     client_secret=self.client_secret, code=redirect_response)
             keyring.set_password('gtasks.py', self.identifier,
@@ -97,6 +114,12 @@ class Gtasks(object):
             else:
                 break
         return results
+
+    def _callback(self, res):
+        if self.auth_callback is not None and isinstance(self.auth_callback,
+                                                                                                 collections.Callable):
+            self.auth_callback(res)
+            self._auth_step2()
 
     def get_tasks(self, include_completed=True, due_min=None, due_max=None,
             task_list='@default', max_results=float('inf'), updated_min=None,
