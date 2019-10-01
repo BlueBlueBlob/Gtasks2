@@ -57,6 +57,7 @@ class Gtasks(object):
             self._callback(self._res)
         else:
             self._auth_step2()
+
     def _auth_step1(self):
         extra = {'client_id': self.client_id, 'client_secret': self.client_secret}
         self.google = OAuth2Session(self.client_id, scope=Gtasks.SCOPE,
