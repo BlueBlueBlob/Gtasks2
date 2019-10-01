@@ -63,7 +63,7 @@ class Gtasks(object):
                 redirect_uri=self.redirect_uri, auto_refresh_kwargs=extra,
                 auto_refresh_url=Gtasks.TOKEN_URL, token_updater=lambda t: None)
 
-        refresh_token = keyring.get_password('gtasks.py', self.identifier)
+        refresh_token = keyring.get_password('gtasks2.py', self.identifier)
         if refresh_token and not self.force_login:
             self.google.refresh_token(Gtasks.TOKEN_URL, refresh_token)
         else:
@@ -89,7 +89,7 @@ class Gtasks(object):
     
             tokens = self.google.fetch_token(Gtasks.TOKEN_URL,
                     client_secret=self.client_secret, code=redirect_response)
-            keyring.set_password('gtasks.py', self.identifier,
+            keyring.set_password('gtasks2.py', self.identifier,
                     tokens['refresh_token'])
 
     def _download_items(self, url, params, item_type, item_index, max_results):
