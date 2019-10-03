@@ -5,5 +5,10 @@
 ## Overview
 
 Just a fork from https://github.com/benjaminwhite/Gtasks
-With a new feature : can handle authorization callback
-callback send { 'authorization_url' : str } and received { 'auth_code' : str }
+With a new feature : authentication in 2 steps
+```
+g = Gtasks(two_steps = True)
+authentication_url = g.auth_url()
+#do authentication
+g.finish_login("your authentication code")
+```

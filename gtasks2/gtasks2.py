@@ -23,7 +23,7 @@ class Gtasks(object):
     TASKS_URL = 'https://www.googleapis.com/tasks/v1/lists/{}/tasks/'
 
     def __init__(self, identifier='default', auto_push=True, auto_pull=False,
-            open_browser=True, force_login=False, credentials_location=None, auth_callback=None):
+            open_browser=True, force_login=False, credentials_location=None, two_steps=False):
         self.identifier = identifier
         self.auto_push = auto_push
         self.auto_pull = auto_pull
@@ -31,9 +31,10 @@ class Gtasks(object):
         self.force_login = force_login
         self.credentials_location = (credentials_location or
                 os.path.join(os.path.dirname(__file__), 'credentials.json'))
-        self._res = {}
+        self._auth_url = ""
+        self._auth_code = ""
         self.google = None
-        self.auth_callback = auth_callback
+        self._two_steps = two_steps
         self._list_index = {}
         self._task_index = {}
         self._updates = set()
@@ -54,10 +55,16 @@ class Gtasks(object):
 
     def authenticate(self):
         self._auth_step1()
-        if self.auth_callback is not None:
-            self._callback(self._res)
-        self._auth_step2()
+        if not self._two_steps:
+            self._auth_step2()
+        
+    def auth_url(self):
+        return self._auth_url
 
+    def finish_login(self, auth_code):
+        self._auth_code = auth_code
+        self._auth_step2()
+        
     def _auth_step1(self):
         extra = {'client_id': self.client_id, 'client_secret': self.client_secret}
         self.google = OAuth2Session(self.client_id, scope=Gtasks.SCOPE,
@@ -70,28 +77,27 @@ class Gtasks(object):
         else:
             authorization_url, __ = self.google.authorization_url(Gtasks.AUTH_URL,
                     access_type='offline', approval_prompt='force')
-            self._res['authorization_url'] = authorization_url
+            self._auth_url = authorization_url
 
     def _auth_step2(self):
         redirect_response = ""
-        if 'authorization_url' in self._res:
-            if self.auth_callback is None:
-                authorization_url = self._res['authorization_url']
-                if self.open_browser:
-                    webbrowser.open_new_tab(authorization_url)
-                    prompt = ('The following URL has been opened in your web browser:'
-                            '\n\n{}\n\nPlease paste the response code below:\n')
-                else:
-                    prompt = ('Please copy the following URL into your web browser:'
-                            '\n\n{}\n\nPlease paste the response code below:\n')
-                redirect_response = compatible_input(prompt.format(authorization_url))
-                print('Thank you!')
+        authorization_url = self._auth_url
+        if not self._two_steps:
+            if self.open_browser:
+                webbrowser.open_new_tab(authorization_url)
+                prompt = ('The following URL has been opened in your web browser:'
+                        '\n\n{}\n\nPlease paste the response code below:\n')
             else:
-                redirect_response = self._res['auth_code']
+                prompt = ('Please copy the following URL into your web browser:'
+                        '\n\n{}\n\nPlease paste the response code below:\n')
+            redirect_response = compatible_input(prompt.format(authorization_url))
+            print('Thank you!')
+        else:
+            redirect_response = self._auth_code
 
-            tokens = self.google.fetch_token(Gtasks.TOKEN_URL,
-                    client_secret=self.client_secret, code=redirect_response)
-            keyring.set_password('gtasks2.py', self.identifier, tokens['refresh_token'])
+        tokens = self.google.fetch_token(Gtasks.TOKEN_URL,
+                client_secret=self.client_secret, code=redirect_response)
+        keyring.set_password('gtasks2.py', self.identifier, tokens['refresh_token'])
 
     def _download_items(self, url, params, item_type, item_index, max_results):
         results = []

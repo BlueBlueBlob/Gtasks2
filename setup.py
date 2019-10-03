@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = 'gtasks2',
-    version = "0.1.1",
+    version = "0.2.0",
     description = 'A fork from the greatest gtasks ',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -19,6 +19,5 @@ setuptools.setup(
         "requests_oauthlib"
     ],
     packages= setuptools.find_packages(),
-    package_data = {'':['*.json']},
     keywords = ['google', 'tasks', 'task', 'gtasks', 'gtask']
 )
