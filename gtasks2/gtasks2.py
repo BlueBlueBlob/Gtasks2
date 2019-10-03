@@ -32,6 +32,7 @@ class Gtasks(object):
         self.credentials_location = (credentials_location or
                 os.path.join(os.path.dirname(__file__), 'credentials.json'))
         self._res = {}
+        self.google = None
         self.auth_callback = auth_callback
         self._list_index = {}
         self._task_index = {}
@@ -55,8 +56,7 @@ class Gtasks(object):
         self._auth_step1()
         if self.auth_callback is not None:
             self._callback(self._res)
-        else:
-            self._auth_step2()
+        self._auth_step2()
 
     def _auth_step1(self):
         extra = {'client_id': self.client_id, 'client_secret': self.client_secret}
@@ -73,6 +73,7 @@ class Gtasks(object):
             self._res['authorization_url'] = authorization_url
 
     def _auth_step2(self):
+        redirect_response = ""
         if 'authorization_url' in self._res:
             if self.auth_callback is None:
                 authorization_url = self._res['authorization_url']
@@ -87,11 +88,10 @@ class Gtasks(object):
                 print('Thank you!')
             else:
                 redirect_response = self._res['auth_code']
-    
+
             tokens = self.google.fetch_token(Gtasks.TOKEN_URL,
                     client_secret=self.client_secret, code=redirect_response)
-            keyring.set_password('gtasks2.py', self.identifier,
-                    tokens['refresh_token'])
+            keyring.set_password('gtasks2.py', self.identifier, tokens['refresh_token'])
 
     def _download_items(self, url, params, item_type, item_index, max_results):
         results = []
@@ -120,7 +120,6 @@ class Gtasks(object):
         if self.auth_callback is not None and isinstance(self.auth_callback,
                                                                                                  collections.Callable):
             self.auth_callback(res)
-            self._auth_step2()
 
     def get_tasks(self, include_completed=True, due_min=None, due_max=None,
             task_list='@default', max_results=float('inf'), updated_min=None,
