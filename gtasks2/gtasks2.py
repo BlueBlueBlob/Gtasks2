@@ -33,12 +33,12 @@ class Gtasks(object):
                 os.path.join(os.path.dirname(__file__), 'credentials.json'))
         self._auth_url = ""
         self._auth_code = ""
-        self.google = None
         self._two_steps = two_steps
         self._list_index = {}
         self._task_index = {}
         self._updates = set()
-
+        self._keyring = keyring.get_keyring()
+        self._refresh_token = False
         self.load_credentials()
         
         self.authenticate()
@@ -55,7 +55,7 @@ class Gtasks(object):
 
     def authenticate(self):
         self._auth_step1()
-        if not self._two_steps:
+        if not self._two_steps or not self._refresh_token:
             self._auth_step2()
         
     def auth_url(self):
@@ -63,7 +63,8 @@ class Gtasks(object):
 
     def finish_login(self, auth_code):
         self._auth_code = auth_code
-        self._auth_step2()
+        if not self._refresh_token:
+            self._auth_step2()
         
     def _auth_step1(self):
         extra = {'client_id': self.client_id, 'client_secret': self.client_secret}
@@ -71,16 +72,16 @@ class Gtasks(object):
                 redirect_uri=self.redirect_uri, auto_refresh_kwargs=extra,
                 auto_refresh_url=Gtasks.TOKEN_URL, token_updater=lambda t: None)
 
-        refresh_token = keyring.get_password('gtasks2.py', self.identifier)
+        refresh_token = self._keyring.get_password('gtasks2.py', self.identifier)
         if refresh_token and not self.force_login:
             self.google.refresh_token(Gtasks.TOKEN_URL, refresh_token)
+            self._refresh_token = True
         else:
             authorization_url, __ = self.google.authorization_url(Gtasks.AUTH_URL,
                     access_type='offline', approval_prompt='force')
             self._auth_url = authorization_url
 
     def _auth_step2(self):
-        redirect_response = ""
         authorization_url = self._auth_url
         if not self._two_steps:
             if self.open_browser:
@@ -97,7 +98,7 @@ class Gtasks(object):
 
         tokens = self.google.fetch_token(Gtasks.TOKEN_URL,
                 client_secret=self.client_secret, code=redirect_response)
-        keyring.set_password('gtasks2.py', self.identifier, tokens['refresh_token'])
+        self._keyring.set_password('gtasks2.py', self.identifier, tokens['refresh_token'])
 
     def _download_items(self, url, params, item_type, item_index, max_results):
         results = []
@@ -121,11 +122,6 @@ class Gtasks(object):
             else:
                 break
         return results
-
-    def _callback(self, res):
-        if self.auth_callback is not None and isinstance(self.auth_callback,
-                                                                                                 collections.Callable):
-            self.auth_callback(res)
 
     def get_tasks(self, include_completed=True, due_min=None, due_max=None,
             task_list='@default', max_results=float('inf'), updated_min=None,
