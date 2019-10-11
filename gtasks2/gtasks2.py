@@ -55,7 +55,7 @@ class Gtasks(object):
 
     def authenticate(self):
         self._auth_step1()
-        if not self._two_steps or not self._refresh_token:
+        if not self._two_steps:
             self._auth_step2()
         
     def auth_url(self):
